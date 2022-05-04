@@ -5,6 +5,7 @@ import { useParams } from "react-router";
 import io from "socket.io-client";
 import Loader from "../Utils/Loader";
 import animationData from "../animations/typing.json";
+import { toast } from "react-toastify";
 
 const ENDPOINT = "https://random-chhaatt.herokuapp.com/"; // "https://talk-a-tive.herokuapp.com"; -> After deployment
 let socket;
@@ -32,111 +33,163 @@ const Chat = () => {
 
   const sendChat = async (e) => {
     e.preventDefault();
-    socket.emit("stop typing", getchat._id);
-    // scrollToBottom();
+    try {
+      socket.emit("stop typing", getchat._id);
+      scrollToBottom();
 
-    let today = new Date();
-    let hours = today.getHours();
-    let minute = today.getMinutes();
-    if (hours < 10) {
-      hours = `0${hours}`;
+      let today = new Date();
+      let hours = today.getHours();
+      let minute = today.getMinutes();
+      if (hours < 10) {
+        hours = `0${hours}`;
+      }
+      if (minute < 10) {
+        minute = `0${minute}`;
+      }
+
+      let timeString = `${hours}:${minute}`;
+      setIsButtonLoading(true);
+      setError("");
+
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+
+      const message = {
+        senderid: userid,
+        content: messagee,
+        time: timeString,
+      };
+
+      const { data } = await axios.post(
+        "/api/v1/createchat",
+        { message, userid, senderid },
+        config
+      );
+      setChatMessage([...chatMessage, data.message]);
+      socket.emit("new message", data.chat);
+      setIsButtonLoading(false);
+      setMessage("");
+      setHide(!hide);
+    } catch (err) {
+      const message =
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message;
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      setIsButtonLoading(false);
     }
-    if (minute < 10) {
-      minute = `0${minute}`;
-    }
-
-    let timeString = `${hours}:${minute}`;
-    setIsButtonLoading(true);
-    setError("");
-
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-
-    const message = {
-      senderid: userid,
-      content: messagee,
-      time: timeString,
-    };
-
-    const { data } = await axios.post(
-      "/api/v1/createchat",
-      { message, userid, senderid },
-      config
-    );
-    setChatMessage([...chatMessage, data.message]);
-    socket.emit("new message", data.chat);
-    setIsButtonLoading(false);
-    setMessage("");
-    setHide(!hide);
   };
 
   const updateChat = async (e) => {
-    // scrollToBottom();
-    setIsButtonLoading(true);
-    socket.emit("stop typing", getchat._id);
-    let today = new Date();
-    let hours = today.getHours();
-    let minute = today.getMinutes();
-    if (hours < 10) {
-      hours = `0${hours}`;
-    }
-    if (minute < 10) {
-      minute = `0${minute}`;
-    }
-
-    let timeString = `${hours}:${minute}`;
-
     e.preventDefault();
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+    try {
+      scrollToBottom();
+      setIsButtonLoading(true);
+      socket.emit("stop typing", getchat._id);
+      let today = new Date();
+      let hours = today.getHours();
+      let minute = today.getMinutes();
+      if (hours < 10) {
+        hours = `0${hours}`;
+      }
+      if (minute < 10) {
+        minute = `0${minute}`;
+      }
 
-    const message = {
-      senderid: userid,
-      content: messagee,
-      time: timeString,
-    };
+      let timeString = `${hours}:${minute}`;
 
-    const { data } = await axios.put(
-      `/api/v1/chat/${getchat._id}`,
-      { message },
-      config
-    );
-    setChatMessage([...chatMessage, data.message]);
-    socket.emit("new message", data.chat);
-    setIsButtonLoading(false);
-    setMessage("");
+      e.preventDefault();
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+
+      const message = {
+        senderid: userid,
+        content: messagee,
+        time: timeString,
+      };
+
+      const { data } = await axios.put(
+        `/api/v1/chat/${getchat._id}`,
+        { message },
+        config
+      );
+      setChatMessage([...chatMessage, data.message]);
+      socket.emit("new message", data.chat);
+      setIsButtonLoading(false);
+      setMessage("");
+    } catch (err) {
+      const message =
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message;
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      setIsButtonLoading(false);
+    }
   };
 
   const fetchChat = async () => {
-    setIsLoading(true);
-    setError("");
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+    try {
+      setIsLoading(true);
+      setError("");
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
 
-    const { data } = await axios.get(
-      `/api/v1/getchat/${userid}/${senderid}`,
-      config
-    );
-    setIsLoading(false);
+      const { data } = await axios.get(
+        `/api/v1/getchat/${userid}/${senderid}`,
+        config
+      );
+      setIsLoading(false);
 
-    if (!data.message) {
-      setError("Start Chatting");
+      if (!data.message) {
+        setError("Start Chatting");
+        setIsLoading(false);
+      }
+      setgetChat(data);
+      setChatMessage([...data.message]);
+
+      socket.emit("join chat", data._id);
+      scrollToBottom();
+    } catch (err) {
+      const message =
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message;
+      toast.error(message, {
+        position: "bottom-center",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
       setIsLoading(false);
     }
-    setgetChat(data);
-    setChatMessage([...data.message]);
-
-    socket.emit("join chat", data._id);
-    scrollToBottom();
   };
 
   useEffect(() => {

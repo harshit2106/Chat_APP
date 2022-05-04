@@ -20,7 +20,7 @@ const App = () => {
 
               <Route path="/main" element={<AllUser />}>
                 <Route
-                  path="chat/:index/:userid/:senderid"
+                  path="/chat/:index/:userid/:senderid"
                   element={<Chat />}
                 />
               </Route>
