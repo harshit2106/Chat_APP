@@ -6,7 +6,7 @@ import io from "socket.io-client";
 import Loader from "../Utils/Loader";
 import animationData from "../animations/typing.json";
 
-const ENDPOINT = "http://localhost:8000"; // "https://talk-a-tive.herokuapp.com"; -> After deployment
+const ENDPOINT = "https://random-chhaatt.herokuapp.com/"; // "https://talk-a-tive.herokuapp.com"; -> After deployment
 let socket;
 const Chat = () => {
   const [messagee, setMessage] = useState("");
